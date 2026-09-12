@@ -11,10 +11,10 @@ This document translates the business model into explicit agent responsibilities
   * Determine user intent regarding offer acceptance.
   * Evaluate offer validity.
   * Determine if payment is required (and amount) based on domain rules.
-  * Determine if financial result satisfies the admission requirement.
+  * Determine if the payment result satisfies the admission requirement.
 * **Authorized Actions**: 
   * Transition offer state to Accepted.
-  * Delegate financial execution to Finance.
+  * Delegate student payment execution to Fees & Payments.
   * Invoke the deterministic Admission Confirmation capability.
 * **Capabilities it may invoke**: Admission Offer Management, Offer Acceptance, Requirement Evaluation, Admission Confirmation.
 * **Prohibited Responsibilities**: Financial execution, student payment collection, payment status determination.

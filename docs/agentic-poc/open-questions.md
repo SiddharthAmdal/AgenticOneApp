@@ -2,25 +2,28 @@
 
 This document captures unresolved architectural questions that must be addressed in the technical implementation phases. It also provides the validation matrix ensuring the POC adheres to the canonical Business Domain v1.0 baseline.
 
-## 1. Architecture Questions to Capture
+## 1. Resolved in Phase 3 (Technical Architecture)
 
-These questions represent concrete technical architecture decisions that must be addressed in the Technical Architecture phase:
+These architectural decisions have been resolved and documented in the ADRs and `technical-architecture.md`:
 
-* **Orchestration / Topology**: Is there a central request/orchestration component (e.g., a routing API gateway), or do agents communicate directly peer-to-peer?
-* **Discovery**: How does the Admissions agent technically discover the endpoint/address of the Fees & Payments agent?
-* **Communication Protocol**: Is agent-to-agent communication synchronous (REST/gRPC/MCP) or asynchronous (Message Broker/Event Bus like Kafka/RabbitMQ)?
-* **Contract Serialization & Versioning**: How are the structured JSON contracts physically validated and versioned at runtime?
-* **Identity & Security**: How is agent identity technically established and authorized? (e.g., mTLS, JWTs, API Keys).
-* **State Management**: Where does the business state physically live? (e.g., Domain-specific Postgres databases).
-* **Decision Record Storage**: Where and how are the Structured Decision Records stored for auditability?
-* **Business Events Infrastructure**: How are business events (like `Admission Confirmed`) published to the wider platform?
-* **Failure Handling UX**: How are asynchronous technical failures propagated back to the user interface?
-* **Agent Runtime**: What specific framework (if any) hosts the agents (e.g., LangChain, custom loop, temporal.io)?
-* **Deterministic Execution**: How do agents physically invoke deterministic capabilities (e.g., HTTP APIs, local function calling)?
+* **Orchestration / Topology**: Resolved as Admissions-Agent-Led Orchestration / Delegation.
+* **Discovery**: Resolved as Static Configuration (Environment Variables).
+* **Communication Protocol**: Resolved as Synchronous HTTP/REST.
+* **Contract Serialization & Versioning**: Resolved as JSON payloads over HTTP POST validated by Pydantic.
+* **Identity & Security**: Resolved via explicit Domain/Agent identifiers in payloads; implicit trust for POC.
+* **State Management**: Resolved as isolated domain-specific SQLite databases.
+* **Decision Record Storage**: Resolved as JSON logs sent to a mock observability aggregator.
+* **Business Events Infrastructure**: Resolved as structured JSON logs emitted by deterministic capabilities.
+* **Failure Handling UX**: Resolved.
+* **Agent Runtime**: Resolved as a custom, lightweight Python execution loop wrapping LLM SDKs.
+* **Deterministic Execution**: Resolved as Local Function Calling (Tools) wrapping internal service methods.
+
+## 2. Deferred to Future Implementation / Production Architecture
+*(None currently recorded. Complex production IAM, Kafka eventing, and Kubernetes deployments are intentionally excluded from the POC scope).*
 
 ---
 
-## 2. Architectural Validation Matrix
+## 3. Architectural Validation Matrix
 
 This matrix validates the POC against the existing Canonical Business Domain Architecture.
 

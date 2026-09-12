@@ -8,7 +8,7 @@ This document defines the exact boundaries of the Agentic Vertical Slice POC to 
 * Admission acceptance requirement evaluation.
 * Payment/deposit requirement determination (evaluating Admissions business rules).
 * Explicit financial execution request (Agent-to-Agent delegation).
-* Structured financial result generation and handling.
+* Structured student payment result generation and handling.
 * Admission confirmation state transition.
 * Agent-to-agent structured delegation and contracts.
 * Business-event and state transitions (e.g., Offer Accepted -> Admission Confirmed).

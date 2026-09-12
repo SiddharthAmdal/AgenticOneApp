@@ -11,7 +11,7 @@ Agents do not act as the database, ledger, or payment gateway. They act as intel
 ## 2. Decision vs. Action
 
 * **Agent Decision**: A determination made by the agent based on input, context, and rules (e.g., "A payment is required").
-* **Agent Action**: The authorized operation the agent initiates as a result of a decision (e.g., "Invoke the 'Create Financial Action Request' capability").
+* **Agent Action**: The authorized operation the agent initiates as a result of a decision (e.g., "Invoke the 'Create Student Payment Request' capability").
 
 **Conceptual Execution Flow:**
 ```text
