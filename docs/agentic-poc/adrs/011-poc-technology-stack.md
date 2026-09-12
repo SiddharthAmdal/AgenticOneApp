@@ -1,5 +1,10 @@
 # ADR 011: POC Technology Stack
 
+> [!NOTE]
+> **Status: Amended**
+> **Amended By: [ADR 012](012-langchain-langgraph-adoption.md)**
+> *This document is preserved for historical record. The core technology stack remains valid, but the agent framework has been amended to LangGraph/LangChain.*
+
 **Context:** We need to select the foundational technologies for the POC implementation phase.
 
 **Decision:** We will use **Python, FastAPI, Pydantic, and SQLite**.
