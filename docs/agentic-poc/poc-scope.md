@@ -16,7 +16,7 @@ This document defines the exact boundaries of the Agentic Vertical Slice POC to 
 * Handling of primary success and failure scenarios (e.g., payment failure).
 
 ## Out of Scope
-* Full, production-grade implementations of the Admissions or Finance domains.
+* Full, production-grade implementations of the Admissions or Fees & Payments domains.
 * Real banking or payment gateway integrations (mocked execution will be used).
 * The complete Student Lifecycle (the POC ends exactly at "Admission Confirmed").
 * Enrollment implementation (owned by Student Lifecycle, out of scope here).

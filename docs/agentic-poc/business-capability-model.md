@@ -41,43 +41,57 @@ To describe how a capability is intended to execute, we use the following consis
 * **Purpose**: Specifically evaluates whether a financial deposit or payment is required to confirm the admission, and determines the amount.
 * **POC Requirement**: Required.
 * **Execution**: Deterministic rules engine.
-* **Dependencies**: Passes requirement to Finance for execution.
+* **Dependencies**: Passes requirement to Fees & Payments for execution.
 
 ### 1.5 Admission Confirmation
 * **Owning Domain**: Admissions
 * **Purpose**: Finalizes the admission state, transitioning the applicant to an "Admission Confirmed" status.
 * **POC Requirement**: Required.
 * **Execution**: Deterministic service.
-* **Dependencies**: Requires successful result from Finance if payment was determined mandatory by 1.4.
+* **Dependencies**: Requires successful result from Fees & Payments if payment was determined mandatory by 1.4.
 
 ---
 
-## 2. Finance Domain Capabilities
+## 2. Fees & Payments Domain Capabilities
 
-### 2.1 Financial Obligation Management
-* **Owning Domain**: Finance
-* **Purpose**: Creates and tracks a formal financial obligation against a user based on a valid request.
+### 2.1 Student Financial Obligation Management
+* **Owning Domain**: Fees & Payments
+* **Purpose**: Creates and tracks a formal financial obligation against a student based on a valid request.
 * **POC Requirement**: Required.
 * **Execution**: Deterministic service.
 * **Dependencies**: Receives request from Admissions.
 
-### 2.2 Payment Processing / Execution
-* **Owning Domain**: Finance
-* **Purpose**: Handles the actual execution of a payment transaction against an obligation.
+### 2.2 Payment Collection / Payment Gateway Execution
+* **Owning Domain**: Fees & Payments
+* **Purpose**: Handles the actual execution of a payment collection against an obligation.
 * **POC Requirement**: Required (conceptually/mocked for POC).
 * **Execution**: Deterministic integration / Workflow.
-* **Dependencies**: None (internal to Finance).
+* **Dependencies**: None (internal to Fees & Payments).
 
 ### 2.3 Payment Status Management
-* **Owning Domain**: Finance
-* **Purpose**: Tracks and reports the real-time status of a payment (Pending, Success, Failed).
+* **Owning Domain**: Fees & Payments
+* **Purpose**: Tracks and reports the real-time status of a student payment (Pending, Success, Failed).
 * **POC Requirement**: Required.
 * **Execution**: Deterministic service.
 * **Dependencies**: Status is returned to Admissions.
 
-### 2.4 Financial Transaction Recording
-* **Owning Domain**: Finance
-* **Purpose**: Records the finalized successful transaction to the institutional ledger.
+### 2.4 Receipting / Reconciliation
+* **Owning Domain**: Fees & Payments
+* **Purpose**: Records the finalized successful receipt at the student-account level.
 * **POC Requirement**: Required.
 * **Execution**: Deterministic service.
 * **Dependencies**: None.
+
+---
+
+## 3. Finance Domain Capabilities (Out of Active POC Scope)
+
+*Note: Finance is only represented conceptually as the downstream boundary for ledger reconciliation. Finance capabilities are NOT invoked synchronously by the POC agents.*
+
+### 3.1 Ledger / Accounting
+* **Owning Domain**: Finance
+* **Purpose**: Institutional ledger and accounting.
+
+### 3.2 Ledger Reconciliation
+* **Owning Domain**: Finance
+* **Purpose**: Reconciling student receipts from Fees & Payments against the institutional bank accounts.

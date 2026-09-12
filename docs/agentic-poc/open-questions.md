@@ -7,7 +7,7 @@ This document captures unresolved architectural questions that must be addressed
 These questions represent concrete technical architecture decisions that must be addressed in the Technical Architecture phase:
 
 * **Orchestration / Topology**: Is there a central request/orchestration component (e.g., a routing API gateway), or do agents communicate directly peer-to-peer?
-* **Discovery**: How does the Admissions agent technically discover the endpoint/address of the Finance agent?
+* **Discovery**: How does the Admissions agent technically discover the endpoint/address of the Fees & Payments agent?
 * **Communication Protocol**: Is agent-to-agent communication synchronous (REST/gRPC/MCP) or asynchronous (Message Broker/Event Bus like Kafka/RabbitMQ)?
 * **Contract Serialization & Versioning**: How are the structured JSON contracts physically validated and versioned at runtime?
 * **Identity & Security**: How is agent identity technically established and authorized? (e.g., mTLS, JWTs, API Keys).
@@ -27,9 +27,9 @@ This matrix validates the POC against the existing Canonical Business Domain Arc
 | Principle | Validation Conclusion |
 | :--- | :--- |
 | **Admissions owns admission decisions** | Validated. Admissions handles all offer logic and transitions the state to Admission Confirmed. |
-| **Finance owns financial execution** | Validated. Finance creates the obligation and executes the mocked payment. |
+| **Fees & Payments owns student payment collection** | Validated. Fees & Payments manages the student financial obligation and collection. |
 | **Payment requirements remain Admissions rules** | Validated. Admissions evaluates ADM-R02 to determine if payment is required before making the request. |
-| **Domain boundaries are preserved** | Validated. The POC respects the Admissions -> Student Lifecycle boundary (stops at Confirmation) and explicitly separates Finance. |
+| **Domain boundaries are preserved** | Validated. The POC respects canonical boundaries, cleanly handing off payment to Fees & Payments. |
 | **Agents do not replace business ownership** | Validated. Agents act strictly within the capabilities and rules assigned to their domain. |
 | **Cross-domain communication occurs through explicit responsibility** | Validated. The Agent-to-Agent interaction is a structured, explicit delegation contract, not open-ended conversation. |
 | **Human accountability is preserved** | Validated. Agents cannot override institutional policies like waiving mandatory fees or issuing massive refunds. |

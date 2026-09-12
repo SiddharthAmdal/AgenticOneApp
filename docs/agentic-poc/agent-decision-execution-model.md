@@ -47,9 +47,9 @@ Instead, agents must emit **Structured Decision Records** for auditability and o
 * `DecisionOutcome`: (e.g., "PaymentRequired").
 * `ApplicableRules`: (e.g., ["ADM-R02"]).
 * `RelevantState`: (e.g., {"OfferStatus": "Issued"}).
-* `AuthorizedAction`: (e.g., "DelegateToFinance").
-* `DelegationTarget`: (e.g., "agent.finance.primary").
-* `CorrelationID`: The overarching workflow trace ID.
+* **AuthorizedAction**: (e.g., "DelegateToFeesAndPayments").
+* **DelegationTarget**: (e.g., "agent.fees-payments.primary").
+* **CorrelationID**: The overarching workflow trace ID.
 
 ## 5. Agent Execution Flows
 
@@ -63,11 +63,11 @@ Decision: Understand Intent (Accept Offer)
 Decision: Validate Offer (Valid)
 Decision: Evaluate Rules (Deposit Required)
     ↓
-Action: Delegate Financial Action Request
+Action: Delegate Student Payment Request
     ↓
-(Handoff to Finance)
+(Handoff to Fees & Payments)
     ↓
-Financial Result Received
+Student Payment Result Received
     ↓
 [Admissions Agent]
     ↓
@@ -80,27 +80,27 @@ Execution: Deterministic capability performs the state transition.
 Outcome: Admission Confirmed
 ```
 
-### 5.2 Finance Agent Execution Trace
+### 5.2 Fees & Payments Agent Execution Trace
 ```text
-Financial Action Request (from Admissions)
+Student Payment Request (from Admissions)
     ↓
-[Finance Agent]
+[Fees & Payments Agent]
     ↓
 Decision: Validate Request Format (Valid)
 Decision: Validate Authorization (Authorized)
 Decision: Check Idempotency (New Request)
     ↓
-Action: Invoke Financial Obligation Capability
-Action: Invoke Payment Workflow
+Action: Invoke Student Financial Obligation Capability
+Action: Invoke Payment Collection Workflow
     ↓
 [Deterministic Payment Workflow]
     ↓
 Payment Result (Cleared)
     ↓
-[Finance Agent]
+[Fees & Payments Agent]
     ↓
-Action: Invoke Transaction Recording Capability
-Action: Return Financial Result to Admissions
+Action: Invoke Receipting / Reconciliation Capability
+Action: Return Student Payment Result to Admissions
 ```
 
 ## 6. Traceability Model

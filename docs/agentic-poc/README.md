@@ -1,15 +1,15 @@
 # OneApp Agentic POC
 
-**Phase:** POC Phase 2 — Minor Corrections Complete  
-**Status:** Ready for Phase 3  
+**Phase:** POC Phase 2 — Canonical Domain Boundary Correction Complete  
+**Status:** Ready for Re-Baseline  
 
 ## POC Purpose
 This Proof of Concept (POC) is designed to validate the **agentic operating model** of the OneApp platform. It is intended to demonstrate how autonomous agents can collaborate across established business domain boundaries to fulfill a single, cohesive user request while strictly preserving domain ownership and human accountability.
 
-## Why Admissions + Finance?
+## Why Admissions + Fees & Payments?
 This scenario was selected because it perfectly illustrates the boundary between business rules (determining *what* must happen) and operational execution (actually *doing* it). 
 * **Admissions** owns the rules for whether a student must pay a deposit to confirm their admission.
-* **Finance** owns the execution of that payment.
+* **Fees & Payments** owns the execution of that student payment collection.
 This prevents Admissions from creeping into financial operations and forces an explicit, structured agent-to-agent delegation.
 
 ## POC Business Scenario
@@ -20,7 +20,9 @@ This prevents Admissions from creeping into financial operations and forces an e
 
 ## Domains Involved
 1. **Admissions**
-2. **Finance**
+2. **Fees & Payments**
+
+*(Note: Finance is downstream for institutional ledger reconciliation and is not in the active synchronous POC execution path).*
 
 ## Scope & Constraints
 This POC is intentionally constrained to a single vertical slice. It does not replace the broader OneApp 21-domain business architecture. For explicit boundaries, see the [POC Scope](poc-scope.md) document.
@@ -34,3 +36,6 @@ This POC relies completely upon the v1.0 Canonical Business Domain Architecture 
 3. Technical Architecture & Tool Definitions
 4. Orchestration Implementation
 5. End-to-End Execution & Validation
+
+*The primary cross-domain interaction demonstrated is:*
+`Admissions Agent` → `Fees & Payments Agent` → `Student Payment Result` → `Admissions Agent`
