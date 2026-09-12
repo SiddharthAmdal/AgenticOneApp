@@ -109,6 +109,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 13. **Phase 4 Implementation Kickoff**: Code scaffolding and integration initiated.
 14. **Phase 4.1 Skeleton**: Repository package structure and Entry API skeleton implemented.
 15. **Phase 4.2 Common Infrastructure**: Centralized logger, exceptions, configuration, and gitignore implemented.
+16. **Phase 4.3 Domain Models + Persistence**: Logically isolated SQLite repositories and domain models implemented for Admissions and Fees & Payments.
 
 ---
 
@@ -358,7 +359,7 @@ Admission Confirmed
 | **Entry API Skeleton** | Yes | Yes | No | No | No | Implementation (Phase 4.1) |
 | **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
-| **SQLite Persistence** | Yes | No | No | No | Yes | Phase 3 Docs |
+| **SQLite Persistence** | Yes | Yes | No | No | Yes | Implementation (Phase 4.3) |
 
 *(Note: Phase 4 Implementation has just kicked off. The repository currently contains no application code).*
 
