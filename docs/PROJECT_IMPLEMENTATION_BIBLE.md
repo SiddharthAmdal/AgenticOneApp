@@ -108,6 +108,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 12. **LangGraph + LangChain**: Adopted for execution state and LLM abstraction (ADR 012).
 13. **Phase 4 Implementation Kickoff**: Code scaffolding and integration initiated.
 14. **Phase 4.1 Skeleton**: Repository package structure and Entry API skeleton implemented.
+15. **Phase 4.2 Common Infrastructure**: Centralized logger, exceptions, configuration, and gitignore implemented.
 
 ---
 
@@ -355,6 +356,7 @@ Admission Confirmed
 | **Admissions + F&P POC Flow** | Yes | No | No | No | Yes | Tech Architecture Docs |
 | **Agent Contracts (JSON)** | Yes | No | No | No | Yes | Contract Docs |
 | **Entry API Skeleton** | Yes | Yes | No | No | No | Implementation (Phase 4.1) |
+| **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
 | **SQLite Persistence** | Yes | No | No | No | Yes | Phase 3 Docs |
 
