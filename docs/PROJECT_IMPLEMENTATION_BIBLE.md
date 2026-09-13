@@ -110,6 +110,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 14. **Phase 4.1 Skeleton**: Repository package structure and Entry API skeleton implemented.
 15. **Phase 4.2 Common Infrastructure**: Centralized logger, exceptions, configuration, and gitignore implemented.
 16. **Phase 4.3 Domain Models + Persistence**: Logically isolated SQLite repositories and domain models implemented for Admissions and Fees & Payments.
+17. **Phase 4.4 Inter-Domain Contracts**: JSON/Pydantic validation models established for StudentPaymentRequest and StudentPaymentResult.
 
 ---
 
@@ -355,7 +356,7 @@ Admission Confirmed
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **21-Domain Architecture** | Yes | No | No | No | Yes | Domain Docs |
 | **Admissions + F&P POC Flow** | Yes | No | No | No | Yes | Tech Architecture Docs |
-| **Agent Contracts (JSON)** | Yes | No | No | No | Yes | Contract Docs |
+| **Agent Contracts (JSON)** | Yes | Yes | Yes | No | Yes | Implementation (Phase 4.4) |
 | **Entry API Skeleton** | Yes | Yes | No | No | No | Implementation (Phase 4.1) |
 | **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
