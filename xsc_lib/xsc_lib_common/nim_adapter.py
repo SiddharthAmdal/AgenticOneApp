@@ -12,6 +12,8 @@ from xsc_lib.xsc_lib_common.xsc_libc_exceptions import (
     ProviderServerError,
     ProviderRequestError
 )
+import re
+from xsc_lib.xsc_lib_common.xsc_libc_tracer import DevelopmentTracer
 
 
 class LLMMessage(BaseModel):
@@ -62,9 +64,15 @@ class NIMAdapter:
             timeout=self.timeout
         )
 
-    def generate_response(self, messages: List[LLMMessage], tools: Optional[List[Dict[str, Any]]] = None) -> LLMResponse:
+    def generate_response(
+        self, 
+        messages: List[LLMMessage], 
+        tools: Optional[List[Dict[str, Any]]] = None,
+        trace_context: Optional[dict] = None
+    ) -> LLMResponse:
         """
         Sends a request to the NIM model and returns a normalized response.
+        Extracts reasoning traces if available and logs them to the development tracer.
         """
         # Translate internal messages to provider format
         provider_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
@@ -79,7 +87,7 @@ class NIMAdapter:
 
         try:
             response = self.client.chat.completions.create(**kwargs)
-            return self._normalize_response(response)
+            return self._normalize_response(response, trace_context)
 
         except openai.AuthenticationError as e:
             raise ProviderAuthenticationError(f"Authentication failed: {str(e)}")
@@ -104,12 +112,42 @@ class NIMAdapter:
             # but allow raising if it's completely out of bounds.
             raise ProviderServerError(f"Unexpected provider error: {str(e)}")
 
-    def _normalize_response(self, response: Any) -> LLMResponse:
+    def _normalize_response(self, response: Any, trace_context: Optional[dict] = None) -> LLMResponse:
         """
         Normalizes the provider response into the internal LLMResponse model.
+        Also intercepts and logs reasoning traces if available.
         """
         choice = response.choices[0]
         message = choice.message
+
+        content = message.content or ""
+        reasoning_content = None
+
+        # Check for reasoning_content in model_extra (OpenAI SDK pattern for some models)
+        if getattr(message, "model_extra", None):
+            reasoning_content = message.model_extra.get("reasoning_content")
+
+        # Check for <think> tags embedded in content (Open-weight model pattern)
+        if not reasoning_content and "<think>" in content:
+            # Extract content between <think> and </think>
+            match = re.search(r"<think>(.*?)</think>", content, flags=re.DOTALL)
+            if match:
+                reasoning_content = match.group(1).strip()
+                # Remove the think block from the canonical content
+                content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+        
+        # Log to development tracer
+        reasoning_available = bool(reasoning_content)
+        
+        # Enhance context with model info
+        log_ctx = dict(trace_context or {})
+        log_ctx["model"] = self.model
+        
+        DevelopmentTracer.log_trace(
+            reasoning_available=reasoning_available,
+            reasoning_content=reasoning_content,
+            context=log_ctx
+        )
 
         tool_calls = None
         if message.tool_calls:
@@ -132,7 +170,7 @@ class NIMAdapter:
             )
 
         return LLMResponse(
-            content=message.content,
+            content=content if content else None,
             finish_reason=choice.finish_reason,
             tool_calls=tool_calls,
             usage=usage

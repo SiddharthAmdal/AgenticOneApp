@@ -52,6 +52,7 @@ class TestPhase46NIMAdapter(unittest.TestCase):
         mock_choice = MagicMock()
         mock_choice.message.content = "Here is the response"
         mock_choice.message.tool_calls = None
+        mock_choice.message.model_extra = None
         mock_choice.finish_reason = "stop"
         mock_response.choices = [mock_choice]
         
@@ -90,6 +91,7 @@ class TestPhase46NIMAdapter(unittest.TestCase):
         mock_response = MagicMock()
         mock_choice = MagicMock()
         mock_choice.message.content = None
+        mock_choice.message.model_extra = None
         mock_choice.finish_reason = "tool_calls"
         
         mock_tc = MagicMock()

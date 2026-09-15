@@ -117,6 +117,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 21. **Phase 4.8 LangGraph Agent Workflows**: Implemented decoupled LangGraph domain agents (`AdmissionsAgent` & `FeesPaymentsAgent`) configured with specialized system prompts and strict tool boundary enforcement. Integrated bounded state loops without executing arbitrary code. Inter-domain delegation remains cleanly stubbed behind tool abstractions (pending HTTP/REST). Tested exclusively against mocked Provider capabilities, isolating network and probabilistic variances.
 22. **Phase 4.9 REST Boundaries & Entry API**: Implemented isolated FastAPI routers for Entry API (`/api/v1/entry`), Admissions Agent (`/api/v1/internal/admissions`), and Fees & Payments Agent (`/api/v1/internal/fees-payments`). Enforced strict Pydantic contract validation at HTTP boundaries using canonical `StudentPaymentRequest` and `StudentPaymentResult`. Validated caller identity structurally without introducing production IAM. Designed safe mapping of business rules and deterministic agent exceptions to appropriate HTTP status codes (400, 422, 500) without exposing internal stacks or chain-of-thought traces. Explicitly deferred actual cross-domain HTTP delegation logic to Phase 4.10.
 23. **Phase 4.10 Agent Delegation**: Implemented a real synchronous REST-based agent delegation path from Admissions to Fees & Payments using `httpx`. Replaced the stubbed `DelegateStudentPaymentTool` with the `FeesPaymentsClient` abstraction that serializes `StudentPaymentRequest`, propagates `CorrelationID` inherently from `AdmissionsAgentState` (via `run_manager.metadata`), sets identity headers, and deserializes `StudentPaymentResult`. Distinctly separated business domain outcomes (e.g. `PaymentStatus=Declined`) from HTTP/transport infrastructure errors, bubbling transport exceptions as structured `DelegationError` mapped gracefully into the agent's context without polluting DB state or orchestration logic. Tested rigorously with `httpx.MockTransport`.
+24. **Phase 4.11 Development-Only Reasoning Trace**: Implemented a constrained, isolated mechanism to capture the LLM's raw chain-of-thought (CoT) solely for forensic diagnostic purposes. The `NIMAdapter` was updated to intercept reasoning patterns (like `<think>` tags or `reasoning_content` extra fields) and funnel them into a `DevelopmentTracer` writing to an isolated local JSONL file (`data/dev_traces/reasoning_traces.jsonl`). The traces are correlated via `CorrelationID` and `DecisionID` where available, but never surface through APIs, `StudentPaymentResult`, canonical SDRs, or production logging facilities.
 
 ---
 
@@ -190,10 +191,11 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 - **Status:** Rejected Permanently
 - **Why Rejected:** LLM output is non-deterministic and cannot be trusted as an authoritative state transition. It must invoke deterministic capabilities instead.
 
-**4. Recording Raw Chain-of-Thought**
+**4. Recording Raw Chain-of-Thought as Authoritative**
 - **Category:** Observability
-- **Status:** Rejected Permanently
+- **Status:** Rejected Permanently for Production Audit
 - **Why Rejected:** Model internals are not authoritative or stable. We require structured, predictable Structured Decision Records (SDRs) for auditing.
+- **POC Exception (Phase 4.11):** A strictly isolated, development-only forensic reasoning trace is captured to a local JSONL sink for diagnostic/research correlation, but it is explicitly supplementary and never treated as proof of the model's actual causal reasoning.
 
 **5. Custom Programmatic Python Loop**
 - **Category:** Implementation
@@ -260,8 +262,9 @@ Admission Confirmed
 - **Idempotency:** Driven by `IdempotencyKey` stored in Fees & Payments.
 
 ### Observability
-- **Structured Decision Records (SDR):** Canonical business/audit representation of the agent's decision outcome. No chain-of-thought.
+- **Structured Decision Records (SDR):** Canonical business/audit representation of the agent's decision outcome.
 - **Business Events:** Emitted strictly after deterministic mutations for audit trails.
+- **Development Reasoning Trace:** A non-authoritative, strictly isolated diagnostic JSONL sink capturing raw chain-of-thought (CoT) for forensic correlation. Never exposed to end users or ordinary application logs.
 
 ---
 
@@ -369,6 +372,7 @@ Admission Confirmed
 | **LangGraph Workflows** | Yes | Yes | No | No | No | Implementation (Phase 4.8) |
 | **Entry API Skeleton** | Yes | Yes | Yes | No | No | Implementation (Phase 4.9) |
 | **Agent Delegation** | Yes | Yes | Yes | No | No | Implementation (Phase 4.10) |
+| **Dev Reasoning Trace** | Yes | Yes | Yes | No | No | Implementation (Phase 4.11) |
 | **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
 | **SQLite Persistence** | Yes | Yes | No | No | Yes | Implementation (Phase 4.3) |

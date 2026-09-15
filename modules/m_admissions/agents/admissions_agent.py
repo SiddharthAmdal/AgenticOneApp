@@ -78,7 +78,12 @@ class AdmissionsAgent:
         messages = [self.system_prompt] + state["messages"]
         
         try:
-            response = self.nim_adapter.generate_response(messages, tools=self.openai_tools)
+            trace_context = {
+                "correlation_id": state.get("correlation_id"),
+                "agent_identity": "agent.admissions.primary",
+                "domain": "Admissions"
+            }
+            response = self.nim_adapter.generate_response(messages, tools=self.openai_tools, trace_context=trace_context)
         except Exception as e:
             return {"error": str(e), "final_result": {"status": "error", "message": f"LLM Error: {str(e)}" }}
             
