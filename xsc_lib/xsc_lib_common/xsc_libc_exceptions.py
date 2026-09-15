@@ -20,3 +20,23 @@ class EntityNotFoundError(OneAppBaseException):
 class StateMutationError(OneAppBaseException):
     """Raised when an illegal or failed state mutation is attempted."""
     pass
+
+class LLMProviderError(OneAppBaseException):
+    """Base exception for all LLM provider related errors."""
+    pass
+
+class ProviderAuthenticationError(LLMProviderError):
+    """Raised when authentication with the provider fails (e.g. invalid API key)."""
+    pass
+
+class ProviderTimeoutError(LLMProviderError):
+    """Raised when a request to the provider times out."""
+    pass
+
+class ProviderServerError(LLMProviderError):
+    """Raised when the provider encounters an internal server error or is unavailable."""
+    pass
+
+class ProviderRequestError(LLMProviderError):
+    """Raised when a request to the provider is malformed or invalid."""
+    pass

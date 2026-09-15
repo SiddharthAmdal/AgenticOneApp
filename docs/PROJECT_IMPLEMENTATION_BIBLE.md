@@ -112,6 +112,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 16. **Phase 4.3 Domain Models + Persistence**: Logically isolated SQLite repositories and domain models implemented for Admissions and Fees & Payments.
 17. **Phase 4.4 Inter-Domain Contracts**: JSON/Pydantic validation models established for StudentPaymentRequest and StudentPaymentResult.
 18. **Phase 4.5 Deterministic Business Capabilities**: Implemented canonical business rules and state transitions strictly decoupled from agent/LLM logic.
+19. **Phase 4.6 LLM Provider Adapter**: Implemented an isolated, generic `NIMAdapter` interface configured for NVIDIA NIM (`openai/gpt-oss-20b`). Maps provider-specific structs to clean Pydantic domain models without leaking SDK dependencies or credentials. Live validation was successfully performed to confirm end-to-end provider connectivity.
 
 ---
 
@@ -359,6 +360,7 @@ Admission Confirmed
 | **Admissions + F&P POC Flow** | Yes | No | No | No | Yes | Tech Architecture Docs |
 | **Agent Contracts (JSON)** | Yes | Yes | Yes | No | Yes | Implementation (Phase 4.4) |
 | **Deterministic Business Capabilities** | Yes | Yes | No | No | No | Implementation (Phase 4.5) |
+| **LLM Provider Adapter** | Yes | Yes | Yes | No | No | Implementation (Phase 4.6) |
 | **Entry API Skeleton** | Yes | Yes | No | No | No | Implementation (Phase 4.1) |
 | **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
