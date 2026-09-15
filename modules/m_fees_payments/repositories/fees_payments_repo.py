@@ -95,12 +95,36 @@ class FeesPaymentsRepository:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM receipts WHERE receipt_id = ?", (receipt_id,))
             row = cursor.fetchone()
-            if not row:
-                return None
-            return Receipt(
-                receipt_id=row[0],
-                obligation_id=row[1],
-                status=row[2],
-                transaction_reference=row[3],
-                created_at=datetime.fromisoformat(row[4])
-            )
+            if row:
+                return Receipt(
+                    receipt_id=row[0],
+                    obligation_id=row[1],
+                    status=row[2],
+                    transaction_reference=row[3],
+                    created_at=datetime.fromisoformat(row[4]) if row[4] else None
+                )
+            return None
+
+    def update_obligation_status(self, obligation_id: str, new_status: str):
+        from datetime import timezone
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE financial_obligations SET status = ?, updated_at = ? WHERE obligation_id = ?",
+                           (new_status, datetime.now(timezone.utc).isoformat(), obligation_id))
+            conn.commit()
+
+    def get_receipts_for_obligation(self, obligation_id: str) -> list[Receipt]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM receipts WHERE obligation_id = ?", (obligation_id,))
+            rows = cursor.fetchall()
+            receipts = []
+            for row in rows:
+                receipts.append(Receipt(
+                    receipt_id=row[0],
+                    obligation_id=row[1],
+                    status=row[2],
+                    transaction_reference=row[3],
+                    created_at=datetime.fromisoformat(row[4]) if row[4] else None
+                ))
+            return receipts
