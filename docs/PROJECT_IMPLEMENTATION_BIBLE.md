@@ -114,6 +114,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 18. **Phase 4.5 Deterministic Business Capabilities**: Implemented canonical business rules and state transitions strictly decoupled from agent/LLM logic.
 19. **Phase 4.6 LLM Provider Adapter**: Implemented an isolated, generic `NIMAdapter` interface configured for NVIDIA NIM (`openai/gpt-oss-20b`). Maps provider-specific structs to clean Pydantic domain models without leaking SDK dependencies or credentials. Live validation was successfully performed to confirm end-to-end provider connectivity.
 20. **Phase 4.7 LangChain Tool Layer**: Designed LangChain wrapper tools linking agentic functions tightly and safely to existing Phase 4.5 capabilities. Authorized access matrices explicitly restrict `Admissions` and `Fees & Payments` tools, preserving firm architectural boundaries.
+21. **Phase 4.8 LangGraph Agent Workflows**: Implemented decoupled LangGraph domain agents (`AdmissionsAgent` & `FeesPaymentsAgent`) configured with specialized system prompts and strict tool boundary enforcement. Integrated bounded state loops without executing arbitrary code. Inter-domain delegation remains cleanly stubbed behind tool abstractions (pending HTTP/REST). Tested exclusively against mocked Provider capabilities, isolating network and probabilistic variances.
 
 ---
 
@@ -363,6 +364,7 @@ Admission Confirmed
 | **Deterministic Business Capabilities** | Yes | Yes | No | No | No | Implementation (Phase 4.5) |
 | **LLM Provider Adapter** | Yes | Yes | Yes | No | No | Implementation (Phase 4.6) |
 | **LangChain Tool Layer** | Yes | Yes | No | No | No | Implementation (Phase 4.7) |
+| **LangGraph Workflows** | Yes | Yes | No | No | No | Implementation (Phase 4.8) |
 | **Entry API Skeleton** | Yes | Yes | No | No | No | Implementation (Phase 4.1) |
 | **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
