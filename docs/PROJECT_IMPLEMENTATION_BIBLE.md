@@ -22,7 +22,7 @@ The Implementation Bible is the canonical source of truth for project evolution,
 | :--- | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-09-12 | Initial Bible created | Establish institutional project history | Superseded |
 | 2.0 | 2026-09-12 | Expanded historical decision/change tracking | Improve completeness and governance | Superseded |
-| 3.0 | 2026-09-15 | Final Phase 4.13 Reconciliation | Concluded Phase 4 implementation and E2E validation | Approved |
+| 3.0 | 2026-09-15 | Final Phase 4.13 Reconciliation | Concluded Phase 4 implementation and E2E validation | Pending Final Review |
 
 ---
 
@@ -370,7 +370,7 @@ Admission Confirmed
 8. **Business events do not control POC workflow.**
 9. **Execution state (LangGraph checkpoints) is not authoritative business state.**
 10. **Idempotency must survive technical retries (Admissions must reuse the same key).**
-11. **Private chain-of-thought must not be persisted as an observability artifact.**
+11. **Private chain-of-thought must not be persisted as canonical, production, or authoritative observability. The POC permits a strictly isolated development-only reasoning trace for forensic diagnostics, but it must remain supplementary and must never be exposed through APIs, SDRs, Business Events, or production logging.**
 12. **Technology changes must not silently alter business ownership.**
 13. **Entry API must not become a hidden business orchestrator.**
 
