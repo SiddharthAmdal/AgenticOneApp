@@ -70,7 +70,13 @@ class FeesPaymentsAgent:
         if iteration >= max_iterations:
             return {"error": "Max iterations reached", "final_result": {"status": "error", "message": "Max iterations reached"}}
             
-        messages = [self.system_prompt] + state["messages"]
+        system_msg_content = self.system_prompt.content
+        request_payload = state.get("request_payload")
+        if request_payload:
+            system_msg_content += f"\n\nRequest payload: {json.dumps(request_payload)}"
+            
+        sys_msg = LLMMessage(role="system", content=system_msg_content)
+        messages = [sys_msg] + state["messages"]
         
         try:
             trace_context = {

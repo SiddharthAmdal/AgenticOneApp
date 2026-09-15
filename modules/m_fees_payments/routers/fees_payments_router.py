@@ -25,7 +25,7 @@ def process_payment(
         # The Fees & Payments Agent receives the raw contract as dict payload
         state = agent.invoke({
             "correlation_id": request.correlation_id,
-            "request_payload": request.model_dump(by_alias=True),
+            "request_payload": request.model_dump(mode='json', by_alias=True),
             "messages": [LLMMessage(role="user", content="Process payment request")]
         })
         
