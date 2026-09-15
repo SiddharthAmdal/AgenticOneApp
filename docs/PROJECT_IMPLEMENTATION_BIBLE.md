@@ -1,7 +1,7 @@
 ---
 Document: PROJECT_IMPLEMENTATION_BIBLE.md
 Version: 3.0
-Status: Approved
+Status: Pending Final Review
 Authority: Project Evolution / Historical Rationale / Change Governance
 Last Updated: 2026-09-15
 Current Phase: Phase 4 (Implementation)
@@ -50,9 +50,9 @@ To strictly enforce business domain boundaries. Orchestration is owned by the do
 - **SQLite** for isolated, domain-owned persistence.
 
 **What are the biggest known limitations?**
-- The `NVIDIA_NIM_API_KEY` is currently missing, blocking live smoke tests.
 - Payments are mocked rather than using a real gateway (POC simplification).
 - Security, authentication, and deployment infrastructure are intentionally simplified for the POC.
+- A live `NVIDIA_NIM_API_KEY` is required whenever a future live smoke test is intentionally run (though deterministic offline automated testing is fully functional and historical live validation was successful).
 
 ---
 
@@ -120,7 +120,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 23. **Phase 4.10 Agent Delegation**: Implemented a real synchronous REST-based agent delegation path from Admissions to Fees & Payments using `httpx`. Replaced the stubbed `DelegateStudentPaymentTool` with the `FeesPaymentsClient` abstraction that serializes `StudentPaymentRequest`, propagates `CorrelationID` inherently from `AdmissionsAgentState` (via `run_manager.metadata`), sets identity headers, and deserializes `StudentPaymentResult`. Distinctly separated business domain outcomes (e.g. `PaymentStatus=Declined`) from HTTP/transport infrastructure errors, bubbling transport exceptions as structured `DelegationError` mapped gracefully into the agent's context without polluting DB state or orchestration logic. Tested rigorously with `httpx.MockTransport`.
 24. **Phase 4.11 Development-Only Reasoning Trace**: Implemented a constrained, isolated mechanism to capture the LLM's raw chain-of-thought (CoT) solely for forensic diagnostic purposes. The `NIMAdapter` was updated to intercept reasoning patterns (like `<think>` tags or `reasoning_content` extra fields) and funnel them into a `DevelopmentTracer` writing to an isolated local JSONL file (`data/dev_traces/reasoning_traces.jsonl`). The traces are correlated via `CorrelationID` and `DecisionID` where available, but never surface through APIs, `StudentPaymentResult`, canonical SDRs, or production logging facilities.
 25. **Phase 4.12 Failure, Retry & Idempotency**: Implemented strict bounded retries (3 attempts, 1s delay) at the transport boundary (`FeesPaymentsClient`), selectively retrying only explicitly transient technical failures (e.g. timeout, 502, 503) while immediately failing business and validation errors (400, 422). Crucially, enforced strict state idempotency atomically at the mutation boundary (`collect_student_payment` deterministic capability). If a duplicated or retry request shares an existing `IdempotencyKey`, it safely returns the identical existing `ReceiptID` without generating duplicate payments or duplicate Business Events. Concurrency collisions are trapped via SQLite UNIQUE constraint violations, bubbled as transient `StateMutationError`s, and safely resolved by the transport retry loop.
-26. **Phase 4.13 Final Integration, Validation & Documentation Reconciliation**: Executed full E2E validation slice spanning Admissions and Fees & Payments. Resolved final LLM message state parsing issues in delegation tools. Reconciled implementation architecture with documentation invariants to conclude Phase 4.
+26. **Phase 4.13 Final Integration, Validation & Documentation Reconciliation**: Executed full E2E validation slice spanning Admissions and Fees & Payments. E2E testing exposed real integration defects that were successfully resolved: (1) Fees & Payments agent state did not receive the required request payload in the expected agent context, and (2) Fees & Payments router required JSON-safe serialization for the Pydantic request payload. After remediation, the four final POC E2E scenarios passed: Success, Business Decline, Technical Retry Exhaustion, and Lost Response / Idempotency. Reconciled implementation architecture with documentation invariants to conclude Phase 4.
 
 ---
 
@@ -238,36 +238,42 @@ Student
   ↓
 OneApp Entry API (Composition Root / Router)
   ↓
-Admissions Agent (LangGraph Workflow)
+Admissions Agent
   ↓
-Admissions Capabilities
+Authorized Delegation Tool
   ↓
-Fees & Payments Agent (LangGraph Workflow)
+FeesPaymentsClient
   ↓
-Fees & Payments Capabilities
+HTTP / REST
+  ↓
+Fees & Payments Router
+  ↓
+Fees & Payments Agent
+  ↓
+Fees & Payments Deterministic Capabilities
   ↓
 Student Payment Result
   ↓
 Admissions Agent
   ↓
-Deterministic Admission Confirmation
+Admissions Deterministic Capabilities
   ↓
 Admission Confirmed
 ```
 
 ### Agent Architecture
-- **LangGraph:** Drives the state machine for each agent. (Execution State)
+- **LangGraph:** Drives the Domain-local execution state machine for each agent. It is NOT a centralized cross-domain workflow engine. Admissions Agent owns cross-domain business process progression, whereas Fees & Payments Agent owns its domain-local decision/execution workflow.
 - **LangChain:** Provides LLM integration and tool abstraction.
-- **Deterministic Capabilities:** Standard Python functions that interact with the database. The LLM only *requests* their execution.
+- **Deterministic Capabilities:** Standard Python functions that perform authoritative state mutation, validate deterministic business invariants, perform persistence, and emit business events after successful mutation. The Agent evaluates state, makes business decisions, selects authorized actions, and invokes tools/capabilities/delegation. The LLM NEVER directly mutates authoritative state.
 
 ### Data Architecture & Persistence
 - **Isolated State:** SQLite databases per domain (`admissions.db`, `fees_payments.db`).
-- **Idempotency:** Driven by `IdempotencyKey` stored in Fees & Payments.
+- **Idempotency:** Enforced and persisted by Fees & Payments for specific state-mutating payment operations. Admissions supplies the `IdempotencyKey`.
 
 ### Observability
 - **Structured Decision Records (SDR):** Canonical business/audit representation of the agent's decision outcome.
 - **Business Events:** Emitted strictly after deterministic mutations for audit trails.
-- **Development Reasoning Trace:** A non-authoritative, strictly isolated diagnostic JSONL sink capturing raw chain-of-thought (CoT) for forensic correlation. Never exposed to end users or ordinary application logs.
+- **Development Reasoning Trace:** Private chain-of-thought must not be persisted as canonical, production, or authoritative observability. The POC permits a strictly isolated development-only reasoning trace for forensic diagnostics, but it is supplementary evidence and must never be exposed through APIs, SDRs, Business Events, or production logging.
 
 ---
 
@@ -289,23 +295,31 @@ Admission Confirmed
 
 ## 11. END-TO-END EXECUTION STORY
 
-1. **User request:** Student submits "Accept Offer" to the Entry API.
-2. **Entry API:** Generates `UserRequestID` and routes to Admissions Agent.
-3. **Admissions Agent:** Invokes `get_admission_offer`. Evaluates status.
-4. **Admissions Agent:** Invokes `evaluate_admission_requirements`. Determines payment is required.
-5. **Payment delegation:** Agent invokes `delegate_student_payment`. Generates `CorrelationID` and `IdempotencyKey`.
-6. **HTTP REST Call:** `StudentPaymentRequest` sent to Fees & Payments endpoint.
-7. **Fees & Payments Validation:** Pydantic structurally validates request. Agent business validates it.
-8. **Idempotency Check:** Agent invokes `collect_student_payment`. Capability checks `IdempotencyKey` in DB.
-9. **Financial Obligation:** Capability creates obligation and executes mocked payment.
-10. **Receipt/Business Transaction:** Capability generates `ReceiptID` and emits Business Event.
-11. **StudentPaymentResult:** Returned to Admissions Agent.
-12. **Admissions evaluation:** Agent sees Success.
-13. **Admission confirmation:** Agent invokes `confirm_admission`. Capability mutates state and emits event.
-14. **Final response:** Entry API returns success to user.
+1. **Student** submits an Accept Offer request.
+2. **Entry API** receives the request and establishes/propagates the request/workflow context.
+3. **Entry API** routes the request to the Admissions Agent.
+4. **Admissions Agent** evaluates the admission offer and requirements.
+5. **Admissions** determines that payment is required.
+6. **Admissions** creates/prepares the payment operation using the appropriate `IdempotencyKey` and existing `CorrelationID`.
+7. **Admissions** invokes the authorized delegation tool.
+8. The **delegation tool** invokes `FeesPaymentsClient`.
+9. **FeesPaymentsClient** sends `StudentPaymentRequest` over synchronous HTTP/REST.
+10. **Fees & Payments** HTTP boundary validates the request.
+11. **Fees & Payments Agent** evaluates the payment request.
+12. **Fees & Payments** invokes deterministic payment capabilities.
+13. The **deterministic capability** enforces idempotency, creates/uses the financial obligation, executes the mocked payment, records the result, creates the `ReceiptID` on success, and emits the corresponding Business Event.
+14. **StudentPaymentResult** is returned through the HTTP boundary to Admissions.
+15. **Admissions** evaluates the structured result.
+16. If successful, **Admissions** invokes its authorized Admission Confirmation action/tool.
+17. Deterministic Admission Confirmation mutates authoritative Admissions state.
+18. Admission Confirmed is produced.
+19. **Entry API** returns the final outcome to the caller.
 
-*(Failure Path - Duplicate Payment):* Fees & Payments capability detects existing `IdempotencyKey`. Immediately returns historical success without duplicate charge.
-*(Failure Path - Timeout):* Admissions Agent experiences HTTP timeout. Retries exact same request with same `IdempotencyKey`.
+*(Failure Path - Duplicate Payment):* If a duplicated or retry request shares an existing `IdempotencyKey`, Fees & Payments safely returns the identical existing `ReceiptID` without generating duplicate payments or duplicate Business Events.
+*(Failure Path - Timeout / Lost Response):* Payment succeeds -> Financial state commits -> Response is lost/timeout occurs -> Admissions retries exact same logical payment request with same `IdempotencyKey` and `CorrelationID` -> Fees & Payments recognizes existing `IdempotencyKey` -> Existing result/ReceiptID returned -> No duplicate financial mutation.
+*(Failure Path - Business Decline):* Payment is declined. No automatic technical retry occurs for business failures.
+*(Failure Path - Validation Failure):* Malformed/unauthorized request. No identical technical retry occurs.
+*(Failure Path - Technical Retry Exhaustion):* Transport failure/timeout exhausts the 3 technical retries. Returns a structured failure without creating duplicate authoritative financial state.
 
 ---
 
@@ -313,12 +327,12 @@ Admission Confirmed
 
 | Identity | Purpose | Created By | Owned By | Passed To | Lifecycle | Retry Semantics |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **User Request ID** | Tracks the UI session. | Entry API | Entry API | All domains | Lives for duration of HTTP session. | Remains same across retries. |
-| **Correlation ID** | Tracks cross-domain trace. | Calling Agent | Caller | Receiving Agent | Lives across network boundary. | May generate new span on retry. |
-| **Idempotency Key** | Prevents duplicate mutation. | Admissions | Fees & Payments | Fees & Payments | Persisted in receiver DB permanently. | **MUST** remain identical on retry. |
-| **Business Transaction ID** | Authoritative committed action (e.g. ReceiptID). | Capability | Capability | Caller | Permanent business record. | Returned identically on retry. |
+| **User Request ID** | Technical request identifier representing originating user/request context. | Entry API | Entry API | All domains | Lives for duration of HTTP session. | Remains same across retries. |
+| **Correlation ID** | Technical cross-domain workflow/tracing identifier. | Caller Workflow | Caller | Receiving Agent | Identifies the overall cross-domain workflow and remains stable across technical retries. | MUST NOT regenerate merely because the HTTP request is retried. |
+| **Idempotency Key** | Technical operation-control identifier protecting a specific state-mutating operation. | Admissions | Fees & Payments | Fees & Payments | Persisted in receiver DB permanently. | **MUST** remain identical for retries of the same logical payment attempt. |
+| **Business Transaction ID** | Business identifier for the committed financial transaction (e.g. ReceiptID). | Capability | Capability | Caller | Permanent business record. | Returned identically on retry of same idempotent operation. |
 
-*(Note: User Request ID and Correlation ID are technical tracing identifiers. Idempotency Key and Business Transaction ID are business identifiers).*
+*(Note: User Request ID, Correlation ID, and Idempotency Key are technical identifiers. Business Transaction ID / ReceiptID is the business identifier for the committed financial transaction).*
 
 ---
 
@@ -383,6 +397,12 @@ Admission Confirmed
 
 *(Note: Phase 4 Implementation is now complete. The repository contains the fully verified cross-domain business logic, contracts, API boundaries, LangGraph agents, and persistence layers. Final Phase 4.13 integration validation is baselined).*
 
+**Implementation Status Matrix Definitions:**
+- **Implemented**: Functionality exists in the repository.
+- **Tested**: Automated tests exercise the functionality.
+- **Verified**: Implementation was checked against the applicable business, contract, architectural, ownership, and boundary requirements (not merely "pytest passed").
+- **Baselined**: The current state has been accepted into project governance/documentation.
+
 ---
 
 ## 16. CURRENT TECHNOLOGY STACK
@@ -421,7 +441,7 @@ Admission Confirmed
   - **Current position:** POC uses a free/shared NVIDIA NIM endpoint.
   - **Decision required:** Production deployment requires dedicated provisioned throughput.
 - **Resolved Question:** NVIDIA NIM API Key Missing.
-  - **Resolution:** The deterministic test suite runs entirely offline via mocked LLM adapters. A live API key is optional and only required for live smoke testing, not for architectural validation.
+  - **Resolution:** Deterministic offline automated testing is fully functional without a live key. Historical live NIM validation was successful. A live API key is required whenever a future live smoke test is intentionally run, but is not required for architectural validation.
 
 ---
 
