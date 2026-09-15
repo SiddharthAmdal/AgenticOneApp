@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import patch, MagicMock
 
 from xsc_lib.xsc_lib_common.xsc_libc_exceptions import EntityNotFoundError, ValidationException
 
@@ -99,23 +99,44 @@ class TestPhase47LangChainTools(unittest.TestCase):
         self.assertEqual(result["error_type"], "EntityNotFoundError")
         self.assertIn("MISSING", result["message"])
 
-    def test_delegate_student_payment_tool(self):
-        """Verify delegate_student_payment constructs the canonical StudentPaymentRequest."""
+    @patch("modules.m_admissions.clients.fees_payments_client.FeesPaymentsClient")
+    def test_delegate_student_payment_tool(self, mock_client_cls):
+        """Verify delegate_student_payment integrates correctly via client."""
+        # Setup mock client to return a valid StudentPaymentResult
+        mock_client = MagicMock()
+        from xsc_lib.xsc_lib_common.agent_contracts import StudentPaymentResult
+        from datetime import datetime, timezone
+        mock_client.delegate_payment.return_value = StudentPaymentResult(
+            ContractVersion="1.0",
+            CorrelationID="corr-47-test",
+            IdempotencyKey="test-idem-999",
+            RequestStatus="Completed",
+            PaymentStatus="Success",
+            ReceiptID="RCPT-123",
+            Timestamp=datetime.now(timezone.utc)
+        )
+        mock_client_cls.return_value = mock_client
+
         tool = next(t for t in self.adm_tools if t.name == "delegate_student_payment")
         
-        result = tool.invoke({
-            "student_id": "S-1",
-            "amount": 500.00,
-            "idempotency_key": "IDEM-123",
-            "currency": "USD"
-        })
+        result = tool.invoke(
+            {
+                "student_id": "S-999",
+                "amount": 1250.0,
+                "idempotency_key": "test-idem-999",
+                "currency": "USD"
+            },
+            config={"metadata": {"correlation_id": "corr-47-test"}}
+        )
         
         self.assertEqual(result["status"], "success")
         data = result["data"]
-        self.assertEqual(data["RequestingDomain"], "Admissions")
-        self.assertEqual(data["StudentID"], "S-1")
-        self.assertEqual(data["Amount"], "500.0")
-        self.assertEqual(data["IdempotencyKey"], "IDEM-123")
+        
+        # Verify canonical fields returned from the mock client
+        self.assertEqual(data["ContractVersion"], "1.0")
+        self.assertEqual(data["CorrelationID"], "corr-47-test")
+        self.assertEqual(data["IdempotencyKey"], "test-idem-999")
+        self.assertEqual(data["PaymentStatus"], "Success")
 
     def test_validate_payment_request_tool(self):
         """Verify validate_payment_request tool passes payload correctly and handles ValidationException."""

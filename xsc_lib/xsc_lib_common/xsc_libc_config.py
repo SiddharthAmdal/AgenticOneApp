@@ -30,3 +30,12 @@ class AppConfig:
     @classmethod
     def get_llm_api_key(cls) -> str:
         return cls.require("NVIDIA_NIM_API_KEY")
+
+    @classmethod
+    def get_fees_payments_service_url(cls) -> str:
+        """
+        Retrieves the base URL for the Fees & Payments internal API.
+        Defaults to http://localhost:8000 matching the standard FastAPI local dev port
+        where the POC's unified entry point runs.
+        """
+        return cls.get("FEES_PAYMENTS_SERVICE_URL", "http://localhost:8000")

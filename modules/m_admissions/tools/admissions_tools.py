@@ -74,16 +74,22 @@ class DelegateStudentPaymentTool(AdmissionsBaseTool):
     description: str = "Construct and delegate a student payment request to the Fees & Payments domain."
     args_schema: Type[BaseModel] = DelegateStudentPaymentInput
 
-    def _run(self, student_id: str, amount: float, idempotency_key: str, currency: str = "USD") -> Dict[str, Any]:
+    def _run(self, student_id: str, amount: float, idempotency_key: str, currency: str = "USD", run_manager: Optional[Any] = None) -> Dict[str, Any]:
         try:
-            import uuid
             from datetime import datetime, timezone
+            from modules.m_admissions.clients.fees_payments_client import FeesPaymentsClient
+            from xsc_lib.xsc_lib_common.xsc_libc_exceptions import ConfigurationError
+
+            correlation_id = run_manager.metadata.get("correlation_id") if run_manager and run_manager.metadata else None
+            if not correlation_id:
+                raise ConfigurationError("correlation_id is missing from tool execution context.")
+
             # Construct the canonical inter-domain request
             request = StudentPaymentRequest(
                 contract_version="1.0",
                 requesting_domain="Admissions",
-                requesting_agent="AdmissionsAgent",
-                correlation_id=str(uuid.uuid4()),
+                requesting_agent="agent.admissions.primary",
+                correlation_id=correlation_id,
                 idempotency_key=idempotency_key,
                 student_id=student_id,
                 obligation_type="AdmissionFee",
@@ -92,11 +98,13 @@ class DelegateStudentPaymentTool(AdmissionsBaseTool):
                 business_reason="Mandatory admission confirmation fee",
                 timestamp=datetime.now(timezone.utc)
             )
-            # In Phase 4.7, we just return the constructed structured request.
-            # Actual transport (HTTP) to Fees & Payments happens in Phase 4.10.
+
+            # Delegate via REST client
+            client = FeesPaymentsClient()
+            result = client.delegate_payment(request)
             return {
                 "status": "success",
-                "data": request.model_dump(mode='json', by_alias=True)
+                "data": result.model_dump(mode='json', by_alias=True)
             }
         except Exception as e:
             return self._format_error(e)

@@ -116,6 +116,7 @@ PROJECT_IMPLEMENTATION_BIBLE.md (Authoritative for Project Evolution & Governanc
 20. **Phase 4.7 LangChain Tool Layer**: Designed LangChain wrapper tools linking agentic functions tightly and safely to existing Phase 4.5 capabilities. Authorized access matrices explicitly restrict `Admissions` and `Fees & Payments` tools, preserving firm architectural boundaries.
 21. **Phase 4.8 LangGraph Agent Workflows**: Implemented decoupled LangGraph domain agents (`AdmissionsAgent` & `FeesPaymentsAgent`) configured with specialized system prompts and strict tool boundary enforcement. Integrated bounded state loops without executing arbitrary code. Inter-domain delegation remains cleanly stubbed behind tool abstractions (pending HTTP/REST). Tested exclusively against mocked Provider capabilities, isolating network and probabilistic variances.
 22. **Phase 4.9 REST Boundaries & Entry API**: Implemented isolated FastAPI routers for Entry API (`/api/v1/entry`), Admissions Agent (`/api/v1/internal/admissions`), and Fees & Payments Agent (`/api/v1/internal/fees-payments`). Enforced strict Pydantic contract validation at HTTP boundaries using canonical `StudentPaymentRequest` and `StudentPaymentResult`. Validated caller identity structurally without introducing production IAM. Designed safe mapping of business rules and deterministic agent exceptions to appropriate HTTP status codes (400, 422, 500) without exposing internal stacks or chain-of-thought traces. Explicitly deferred actual cross-domain HTTP delegation logic to Phase 4.10.
+23. **Phase 4.10 Agent Delegation**: Implemented a real synchronous REST-based agent delegation path from Admissions to Fees & Payments using `httpx`. Replaced the stubbed `DelegateStudentPaymentTool` with the `FeesPaymentsClient` abstraction that serializes `StudentPaymentRequest`, propagates `CorrelationID` inherently from `AdmissionsAgentState` (via `run_manager.metadata`), sets identity headers, and deserializes `StudentPaymentResult`. Distinctly separated business domain outcomes (e.g. `PaymentStatus=Declined`) from HTTP/transport infrastructure errors, bubbling transport exceptions as structured `DelegationError` mapped gracefully into the agent's context without polluting DB state or orchestration logic. Tested rigorously with `httpx.MockTransport`.
 
 ---
 
@@ -367,6 +368,7 @@ Admission Confirmed
 | **LangChain Tool Layer** | Yes | Yes | No | No | No | Implementation (Phase 4.7) |
 | **LangGraph Workflows** | Yes | Yes | No | No | No | Implementation (Phase 4.8) |
 | **Entry API Skeleton** | Yes | Yes | Yes | No | No | Implementation (Phase 4.9) |
+| **Agent Delegation** | Yes | Yes | Yes | No | No | Implementation (Phase 4.10) |
 | **Common Infrastructure** | Yes | Yes | No | No | No | Implementation (Phase 4.2) |
 | **LangGraph Workflows** | Yes | No | No | No | No | Phase 4 Plan (ADR 012) |
 | **SQLite Persistence** | Yes | Yes | No | No | Yes | Implementation (Phase 4.3) |

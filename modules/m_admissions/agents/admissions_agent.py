@@ -124,7 +124,10 @@ class AdmissionsAgent:
             if tool_name in self.tools:
                 tool = self.tools[tool_name]
                 try:
-                    res = tool.invoke(args)
+                    res = tool.invoke(
+                        args,
+                        config={"metadata": {"correlation_id": state.get("correlation_id")}}
+                    )
                     tool_results.append(f"Tool {tool_name} returned: {json.dumps(res)}")
                 except Exception as e:
                     tool_results.append(f"Tool {tool_name} failed: {str(e)}")
