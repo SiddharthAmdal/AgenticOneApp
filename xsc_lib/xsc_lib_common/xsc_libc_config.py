@@ -39,3 +39,11 @@ class AppConfig:
         where the POC's unified entry point runs.
         """
         return cls.get("FEES_PAYMENTS_SERVICE_URL", "http://localhost:8000")
+
+    @classmethod
+    def get_max_retry_attempts(cls) -> int:
+        return int(cls.get("MAX_RETRY_ATTEMPTS", "3"))
+
+    @classmethod
+    def get_retry_delay_seconds(cls) -> float:
+        return float(cls.get("RETRY_DELAY_SECONDS", "1.0"))

@@ -11,6 +11,7 @@ from xsc_lib.xsc_lib_common.agent_contracts import (
 )
 from modules.m_fees_payments.repositories.fees_payments_repo import FeesPaymentsRepository
 from modules.m_fees_payments.models.financial_obligation import FinancialObligation, Receipt
+import sqlite3
 
 class FeesPaymentsCapabilities:
     """
@@ -42,14 +43,32 @@ class FeesPaymentsCapabilities:
         existing_obligation = self.repo.get_obligation_by_idempotency_key(request.idempotency_key)
         if existing_obligation:
             if existing_obligation.status == "Cleared":
-                # Note: Full replay behavior belongs to Phase 4.12, but we must return
-                # *something* deterministic here to avoid a duplicate charge.
-                # Since we don't have full replay infrastructure, we just reject duplicates for now
-                # or return a generic success if we can find the receipt. Let's strictly reject 
-                # duplicate active attempts as instructed by FNP-R03 to prevent double charging.
-                raise StateMutationError(f"Idempotency violation: Payment already cleared for key {request.idempotency_key}")
+                receipts = self.repo.get_receipts_for_obligation(existing_obligation.obligation_id)
+                receipt_id = receipts[0].receipt_id if receipts else "UNKNOWN"
+                return StudentPaymentResult(
+                    ContractVersion="1.0",
+                    CorrelationID=request.correlation_id,
+                    IdempotencyKey=request.idempotency_key,
+                    RequestStatus=RequestStatus.COMPLETED,
+                    PaymentStatus=PaymentStatus.SUCCESS,
+                    ReceiptID=receipt_id,
+                    Timestamp=datetime.now(timezone.utc)
+                )
+            elif existing_obligation.status == "Failed":
+                return StudentPaymentResult(
+                    ContractVersion="1.0",
+                    CorrelationID=request.correlation_id,
+                    IdempotencyKey=request.idempotency_key,
+                    RequestStatus=RequestStatus.COMPLETED,
+                    PaymentStatus=PaymentStatus.DECLINED,
+                    FailureReason="Previous execution declined",
+                    Timestamp=datetime.now(timezone.utc)
+                )
             else:
-                raise StateMutationError(f"Idempotency violation: Payment already processed or pending for key {request.idempotency_key}")
+                # Concurrent race or stuck pending.
+                # Returning a StateMutationError bubbles as HTTP 500 which triggers a transient retry.
+                # The next attempt will likely see "Cleared" or "Failed".
+                raise StateMutationError(f"Concurrent idempotency collision for key {request.idempotency_key}")
 
         now_dt = datetime.now(timezone.utc)
         obligation_id = str(uuid.uuid4())
@@ -64,7 +83,12 @@ class FeesPaymentsCapabilities:
             created_at=now_dt,
             updated_at=now_dt
         )
-        self.repo.save_obligation(obligation)
+        try:
+            self.repo.save_obligation(obligation)
+        except sqlite3.IntegrityError:
+            # Race condition: someone else inserted the IdempotencyKey between our read and write.
+            # Bubbling as StateMutationError triggers a 500 -> retry -> catches existing_obligation above.
+            raise StateMutationError(f"Concurrent insert idempotency collision for key {request.idempotency_key}")
 
         # MOCK PAYMENT EXECUTION (FNP-R04)
         # In a real system, this calls a gateway. For POC, it is immediate.
